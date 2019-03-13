@@ -15,8 +15,11 @@ describe("test stuff", () => {
     const { SimpleStorage } = await compile("SimpleStorage.sol");
 
     // 2. Spawn Ganache test blockchain
-    provider = Ganache.provider();
-    web3 = new Web3(provider);
+    // provider = Ganache.provider();
+    // web3 = new Web3(provider);
+
+    // 2. Connect to local Ganache
+    const web3 = new Web3("http://localhost:8545");
     accounts = await web3.eth.getAccounts();
 
     // 3. Create initial contract instance
@@ -29,6 +32,8 @@ describe("test stuff", () => {
 
     // 5. Assign deployed contract instance to variable
     contractInstance = deployedInstance;
+
+    console.log("contractInstance Address", contractInstance.options.address)
   });
 
   afterAll(async () => {
