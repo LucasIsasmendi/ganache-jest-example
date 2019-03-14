@@ -39,3 +39,9 @@ This file houses our tests. Notice that most of the heavy lifting is done in the
 - Deploy our contract with `web3`.
 
 In the `afterAll` hook, we simply call `stop()` on the Provider to clean up after ourselves.
+
+## Flattering
+```
+
+```
+
