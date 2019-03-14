@@ -4,11 +4,11 @@ const solc = require("solc");
 
 const compile = filename => {
   const sourcePath = path.join(__dirname, filename);
-
+  const fileContent = fs.readFileSync(sourcePath, { encoding: "utf8" });
   const input = {
     sources: {
       [sourcePath]: {
-        content: fs.readFileSync(sourcePath, { encoding: "utf8" }),
+        content: fileContent,
       },
     },
     language: "Solidity",
