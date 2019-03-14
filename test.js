@@ -65,4 +65,8 @@ describe("test ERC20", () => {
       expect(balanceAddr2After).toEqual("25000");
     });
   });
+
+  describe("watch my ERC20 balance - subscription", () => {
+
+  })
 });
