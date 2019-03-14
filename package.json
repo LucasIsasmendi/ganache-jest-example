@@ -4,10 +4,8 @@
   "description": "A barebones demonstration of testing Solidity contracts",
   "main": "test.js",
   "scripts": {
-    "test-old": "jest test.js -i --detectOpenHandles",
-    "test": "jest test-erc.js -i --detectOpenHandles",
-    "start": "npm test",
-    "start-erc": "npm test-erc"
+    "test": "jest test -i --detectOpenHandles",
+    "start": "npm test"
   },
   "keywords": [],
   "author": "",
@@ -17,8 +15,5 @@
     "jest": "^23.6.0",
     "solc": "^0.5.2",
     "web3": "1.0.0-beta.48"
-  },
-  "dependencies": {
-    "openzeppelin-solidity": "^2.1.3"
   }
 }

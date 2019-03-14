@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 const Web3 = require("web3");
-const compile = require("./compile");
+const compile = require("../utils/compile");
 
 let contractInstance;
 let accounts;
@@ -10,42 +10,25 @@ let provider;
 let web3;
 let web3Ws;
 
-jest.setTimeout(6100);
+//jest.setTimeout(6100);
 
 const deploySmartContract = async function () {
-  // 1. Compile contract artifact
-  try {
-    const { IOEToken } = await compile("FlattenedERC20.sol");
-    accounts = await web3.eth.getAccounts();
-    // 3. Create initial contract instance
-    const instance = new web3.eth.Contract(IOEToken.abi);
-
-    // 4. Deploy contract and get new deployed instance
-    const deployedInstance = await instance
-      .deploy({ data: IOEToken.evm.bytecode.object, arguments: ["TEST SMCT", "TST", 9] })
-      .send({ from: accounts[0], gas: 2250000 });
-    console.log("....4 - create instance smart contract");
-    // 5. Assign deployed contract instance to variable
-    contractInstance = deployedInstance;
-
-    console.log("....5 - contractInstance Address", contractInstance.options.address);
-
-    await contractInstance.methods.mint(accounts[1], 10000000).send({ from: accounts[0] });
-  } catch (error) {
-    console.log(error)
-  }
+  const { IOEToken } = await compile("../contracts/FlattenedERC20.sol");
+  accounts = await web3.eth.getAccounts();
+  const instance = new web3.eth.Contract(IOEToken.abi);
+  const deployedInstance = await instance
+    .deploy({ data: IOEToken.evm.bytecode.object, arguments: ["TEST SMCT", "TST", 9] })
+    .send({ from: accounts[0], gas: 2250000 });
+  contractInstance = deployedInstance;
+  console.log("contractInstance Address", contractInstance.options.address);
+  await contractInstance.methods.mint(accounts[1], 10000000).send({ from: accounts[0] });
 }
 
-describe("test ERC20", () => {
+describe("test IOEToken (ERC20 + mint)", () => {
   beforeAll(async () => {
-    try {
-      console.log("Before All")
-      web3 = new Web3("http://localhost:8545");
-      web3Ws = new Web3("ws://localhost:8545");
-      await deploySmartContract();
-    } catch (error) {
-      console.log("error", error)
-    }
+    web3 = new Web3("http://localhost:8545");
+    web3Ws = new Web3("ws://localhost:8545");
+    await deploySmartContract();
   });
 
   afterAll(async () => {
@@ -56,17 +39,12 @@ describe("test ERC20", () => {
 
   describe("check balance", () => {
     it("should check balance from receiver address", async () => {
-      const balanceAddr2 = await contractInstance.methods.balanceOf(accounts[2]).call();
-
-      console.log("balances Account 2", balanceAddr2);
       // transferFrom is triggered by the ccount that receives the money,
       // it requires aproval from the sender
       // https://theethereum.wiki/w/index.php/ERC20_Token_Standard
-      const load1 = await contractInstance.methods.transfer(accounts[2], 25000).send({ from: accounts[1] });
-      const balanceAddr2After = await contractInstance.methods.balanceOf(accounts[2]).call();
-      console.log("balances Account 2 after transfer", balanceAddr2After);
-      console.log("balance account 1: ", await contractInstance.methods.balanceOf(accounts[1]).call());
-      expect(balanceAddr2After).toEqual("25000");
+      await contractInstance.methods.transfer(accounts[2], 25000).send({ from: accounts[1] });
+      const balanceAddr2 = await contractInstance.methods.balanceOf(accounts[2]).call();
+      expect(balanceAddr2).toEqual("25000");
     });
   });
 
@@ -75,22 +53,21 @@ describe("test ERC20", () => {
       let callsCounter = 0;
       const logs = web3Ws.eth.subscribe('logs', (error, result) => {
         if (!error) {
-          console.log("------- logs ok", result);
+          console.log("[logs] ok");
         } else {
-          console.error("------- logs error", error);
+          console.error("[logs] error", error);
         }
       }).on("data", (log) => {
         ++callsCounter;
         if (callsCounter === 3) {
-          console.log("logs", callsCounter, log);
           expect(log.data).toBe('0x00000000000000000000000000000000000000000000000000000000000009c4');
           logs.unsubscribe(function (error, success) {
             if (success)
-              console.log('Successfully unsubscribed! 2');
+              console.log('[logs] Successfully unsubscribed');
           });
         }
       }).on("changed", (log) => {
-        console.log("changed2", log);
+        console.log("[logs] changed", log);
       });
       await contractInstance.methods.transfer(accounts[2], 2500).send({ from: accounts[1] });
       await contractInstance.methods.transfer(accounts[3], 2500).send({ from: accounts[1] });
@@ -98,18 +75,17 @@ describe("test ERC20", () => {
     });
 
     it("should listen to pendingTransactions", async () => {
-      console.log("start pendingTransactions")
       const pendingTransactions = web3Ws.eth.subscribe('pendingTransactions', (error, result) => {
         if (!error) {
-          console.log("------- pendingTransactions ok", result);
+          console.log("[pendingTransactions] ok");
         } else {
-          console.error("------- pendingTransactions error", error);
+          console.error("[pendingTransactions] error", error);
         }
       }).on("data", async (log) => {
         expect(log).not.toBeNull();
         pendingTransactions.unsubscribe(function (error, success) {
           if (success)
-            console.log('Successfully unsubscribed! 2');
+            console.log('[pendingTransactions] Successfully unsubscribed');
         });
       });
       await contractInstance.methods.transfer(accounts[2], 2600).send({ from: accounts[1] });
@@ -119,18 +95,17 @@ describe("test ERC20", () => {
       const latestBlock = await web3.eth.getBlockNumber();
       const newBlockHeaders = web3Ws.eth.subscribe('newBlockHeaders', (error, result) => {
         if (!error) {
-          console.log("------- newBlockHeaders ok", result);
+          console.log("[newBlockHeaders] ok");
         } else {
-          console.error("------- newBlockHeaders error", error);
+          console.error("[newBlockHeaders] error", error);
         }
       }).on("data", (log) => {
         ++callsCounter;
-        console.log("newBlockHeaders", callsCounter, log);
         if (callsCounter === 3) {
           expect(log.number).toBe(3 + latestBlock);
           newBlockHeaders.unsubscribe(function (error, success) {
             if (success)
-              console.log('Successfully unsubscribed! 2');
+              console.log('[newBlockHeaders] Successfully unsubscribed');
           });
         }
       });
